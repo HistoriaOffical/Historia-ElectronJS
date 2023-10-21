@@ -1,0 +1,49 @@
+{
+  "name": "Historia-Local-Web-App",
+  "version": "1.0.0",
+  "description": "Historia Local Web App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --dev",
+    "electron:build": "electron-builder"
+  },
+  "author": "Historia.Network",
+  "license": "ISC",
+  "build": {
+    "appId": "com.historia.hlwa",
+    "productName": "Historia Local Web App",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "resources/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "resources/icon.png"
+    },
+    "extraResources": [
+      {
+        "from": "./assets/HistoriaLocal/",
+        "to": "HistoriaLocal",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "files": [
+      "main.js",
+      "index.html",
+      "node_modules/"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^26.2.2",
+    "electron-builder": "^24.6.4"
+  }
+}
