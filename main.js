@@ -1,10 +1,12 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, shell } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const { exec } = require('child_process');
-let mainWindow;
 
-app.commandLine.appendSwitch('ignore-certificate-errors')
+let mainWindow;
+let childProcess;
+
+app.commandLine.appendSwitch('ignore-certificate-errors');
 const isDev = process.argv.includes('--dev');
 
 function detectOperatingSystem() {
@@ -20,122 +22,139 @@ function detectOperatingSystem() {
   }
 }
 
-app.on('ready', async () => {
+function isDotnetInstalled(callback) {
+  exec('dotnet --version', (error, stdout, stderr) => {
+    if (error || stderr) {
+      callback(false);
+    } else {
+      callback(true);
+    }
+  });
+}
+
+function loadMainProgram() {
+  mainWindow = new BrowserWindow({
+    width: 1280,
+    height: 1024,
+    autoHideMenuBar: true,
+  });
+
+  if (isDev) {
     try {
-
-      let dotnetPath;
+      mainWindow.webContents.openDevTools();
+      let configPath;
       const os = detectOperatingSystem();
-      console.log('OS is:', os);
+
+      if (os === 'Windows') {
+        configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb.exe');
+      } else if (os === "Linux") {
+        configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb');
+      } else {
+        configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb.dll');
+      }
+
+      childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(__dirname, 'assets', 'HistoriaLocal') : undefined });
+
+      childProcess.stdout.on('data', (data) => {
+        console.log(`Child process stdout: ${data}`);
+      });
+
+      childProcess.stderr.on('data', (data) => {
+        console.error(`Child process stderr: ${data}`);
+      });
+
+      childProcess.on('exit', (code) => {
+        console.log(`Child process exited with code ${code}`);
+      });
+    } catch (e) {
+      console.error("ERROR:", e);
+    }
+  } else {
+    try {
+      let configPath;
+      const os = detectOperatingSystem();
+
+      if (os === 'Windows') {
+        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
+      } else if (os === "Linux") {
+        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb');
+      } else {
+        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.dll');
+      }
+
+      childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(process.resourcesPath, 'HistoriaLocal') : undefined });
+
+      childProcess.stdout.on('data', (data) => {
+        console.log(`Child process stdout: ${data}`);
+      });
+
+      childProcess.stderr.on('data', (data) => {
+        console.error(`Child process stderr: ${data}`);
+      });
+
+      childProcess.on('exit', (code) => {
+        console.log(`Child process exited with code ${code}`);
+      });
+    } catch (e) {
+      console.error("ERROR:", e);
+    }
+  }
+
+  app.on('before-quit', () => {
+    if (childProcess) {
+      console.log('Terminating C# process...');
+      childProcess.kill();
+    }
+  });
+
+  // Wait for a moment to ensure the C# server has started
+  setTimeout(() => {
+    mainWindow.loadURL('http://localhost:5000/');
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+    });
+  }, 2000);
+}
+
+function loadRequirementsPage() {
+  mainWindow = new BrowserWindow({
+    width: 1280,
+    height: 1024,
+    autoHideMenuBar: true,
+  });
+
+  mainWindow.loadFile(path.join(__dirname, 'requirements', 'requirements.html'));
+
+  // Handle the link click event
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    // Open external links in the user's default web browser
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
+}
+
+app.on('ready', async () => {
+  try {
+    let dotnetPath;
+    const os = detectOperatingSystem();
+    console.log('OS is:', os);
+
+    isDotnetInstalled((dotnetInstalled) => {
+      if (!dotnetInstalled) {
         dotnetPath = "/usr/local/share/dotnet/dotnet";
-        if (dotnetPath) {
-          mainWindow = new BrowserWindow({
-            width: 1280,
-            height: 1024,
-            autoHideMenuBar: true,
-          });
-          if (isDev) {
-              try {
-                mainWindow.webContents.openDevTools();
-                let configPath;
-                if (os === 'Windows') {
-                  configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb.exe');
-                  console.log("WINDOWS");
-                  childProcess = spawn(configPath);
-                } else if(os === "Linux"){
-                  configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb');
-                  const args = [configPath];
-                  console.log("Linux");
-                  childProcess = spawn(configPath, { 
-                	cwd: path.join(__dirname, 'assets', 'HistoriaLocal')
-                  });
-        	      } else {
-                  configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb.dll');
-                  const args = [configPath];
-                  console.log("OSX");
-                  childProcess = spawn(dotnetPath, args);  
-                }
-
-                childProcess.stdout.on('data', (data) => {
-                  console.log(`Child process stdout: ${data}`);
-                });
-
-                childProcess.stderr.on('data', (data) => {
-                  console.error(`Child process stderr: ${data}`);
-                });
-
-                childProcess.on('exit', (code) => {
-                  console.log(`Child process exited with code ${code}`);
-                });
-              } catch (e) {
-                console.error("ERROR:", e);
-              }
-
-          } else {
-
-            try {
-
-                let configPath;
-                if (os === 'Windows') {
-                  configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
-                  console.log("WIN32");
-                  childProcess = spawn(configPath);
-
-		            } else if(os === "Linux"){
-                  configPath = path.join(path.dirname(__dirname), 'HistoriaLocal','HistWeb');
-                  const args = [configPath];
-                  console.log("Linux");
-                  childProcess = spawn(configPath, {
-                        cwd: path.join(process.resourcesPath, 'HistoriaLocal')
-                  });
-
-                } else {
-                  configPath = path.join(path.dirname(__dirname), 'HistoriaLocal','HistWeb.dll');
-                  const args = [configPath];
-                  childProcess = spawn(dotnetPath, args);  
-                }
-
-              childProcess.stdout.on('data', (data) => {
-                console.log(`Child process stdout: ${data}`);
-              });
-
-              childProcess.stderr.on('data', (data) => {
-                console.error(`Child process stderr: ${data}`);
-              });
-
-              childProcess.on('exit', (code) => {
-                console.log(`Child process exited with code ${code}`);
-              });
-            } catch (e) {
-              console.error("ERROR:", e);
-            }
-
-          }
-
-          app.on('before-quit', () => {
-            if (childProcess) {
-              console.log('Terminating C# process...');
-              childProcess.kill(); // Terminate the child process when Electron app is quitting.
-            }
-          });
-
-          // Wait for a moment to ensure the C# server has started
-          setTimeout(() => {
-          mainWindow.loadURL('http://localhost:5000/');
-          mainWindow.on('closed', () => {
-            mainWindow = null;
-          });
-          }, 2000); 
-
-        } else {
-          console.log('.NET is not installed.');
-        }
-
+        loadMainProgram();
+      } else {
+        console.log('.NET is not installed.');
+        loadRequirementsPage();
+      }
+    });
   } catch (err) {
     console.error('Error checking dotnet installation:', err);
-
   }
 });
 
 app.on('window-all-closed', () => {
-    app.quit();
+  app.quit();
 });
