@@ -142,7 +142,7 @@ app.on('ready', async () => {
     console.log('OS is:', os);
 
     isDotnetInstalled((dotnetInstalled) => {
-      if (!dotnetInstalled) {
+      if (dotnetInstalled) {
         dotnetPath = "/usr/local/share/dotnet/dotnet";
         loadMainProgram();
       } else {
