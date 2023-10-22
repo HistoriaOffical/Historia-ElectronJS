@@ -1,6 +1,8 @@
 const { app, BrowserWindow, shell } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
+const winston = require('winston');
 const { exec } = require('child_process');
 
 let mainWindow;
@@ -8,6 +10,10 @@ let childProcess;
 
 app.commandLine.appendSwitch('ignore-certificate-errors');
 const isDev = process.argv.includes('--dev');
+
+const logFileName = path.join(app.getPath('userData'), 'app.log');
+winston.add(new winston.transports.File({ filename: logFileName }));
+
 
 function detectOperatingSystem() {
   switch (process.platform) {
@@ -23,13 +29,26 @@ function detectOperatingSystem() {
 }
 
 function isDotnetInstalled(callback) {
-  exec('dotnet --version', (error, stdout, stderr) => {
+  // Specify the path to dotnet based on the operating system
+  let dotnetPath = '';
+  if (os.platform() === 'win32') {
+    dotnetPath = 'dotnet'; // Assuming dotnet is in the system PATH on Windows
+  } else if (os.platform() === 'darwin' || os.platform() === 'linux') {
+    dotnetPath = '/usr/local/share/dotnet/dotnet'; // Adjust the path as needed for OSX/Linux
+  }
+
+  const command = `${dotnetPath} --version`;
+
+  exec(command, (error, stdout, stderr) => {
     if (error || stderr) {
+      winston.info('dotnet error: ' + error + " " + stderr);
       callback(false);
     } else {
+      winston.info('dotnet installed');
       callback(true);
     }
   });
+
 }
 
 function loadMainProgram() {
@@ -40,20 +59,34 @@ function loadMainProgram() {
   });
 
   if (isDev) {
+    console.log("DEV");
     try {
       mainWindow.webContents.openDevTools();
       let configPath;
+      let dotnetPath = "/usr/local/share/dotnet/dotnet";
       const os = detectOperatingSystem();
 
       if (os === 'Windows') {
         configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb.exe');
+        console.log("WINDOWS");
+        childProcess = spawn(configPath);
       } else if (os === "Linux") {
         configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb');
+        const args = [configPath];
+        console.log("Linux");
+        childProcess = spawn(configPath, { 
+          cwd: path.join(__dirname, 'assets', 'HistoriaLocal')
+        });
       } else {
         configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb.dll');
+        const args = [configPath];
+        console.log("OSX");
+        childProcess = spawn(dotnetPath, args);  
       }
 
-      childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(__dirname, 'assets', 'HistoriaLocal') : undefined });
+
+
+      //childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(__dirname, 'assets', 'HistoriaLocal') : undefined });
 
       childProcess.stdout.on('data', (data) => {
         console.log(`Child process stdout: ${data}`);
@@ -70,33 +103,51 @@ function loadMainProgram() {
       console.error("ERROR:", e);
     }
   } else {
+    winston.info('PROD');
     try {
+
       let configPath;
       const os = detectOperatingSystem();
-
+      let dotnetPath = "/usr/local/share/dotnet/dotnet";
       if (os === 'Windows') {
+        winston.info("WINDOWS");
         configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
+        childProcess = spawn(configPath);
+
       } else if (os === "Linux") {
-        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb');
+        winston.info("Linux");
+        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal','HistWeb');
+        const args = [configPath];
+        console.log("Linux");
+        childProcess = spawn(configPath, {
+              cwd: path.join(process.resourcesPath, 'HistoriaLocal')
+        });
+
       } else {
-        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.dll');
+        winston.info('OSX');
+        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal','HistWeb.dll');
+        const args = [configPath];
+        const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
+        childProcess = spawn(dotnetPath, args, { cwd: resourcesPath });  
       }
 
-      childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(process.resourcesPath, 'HistoriaLocal') : undefined });
+
+      
+      //childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(process.resourcesPath, 'HistoriaLocal') : undefined });
 
       childProcess.stdout.on('data', (data) => {
-        console.log(`Child process stdout: ${data}`);
+        winston.info(`Child process stdout: ${data}`);
       });
 
       childProcess.stderr.on('data', (data) => {
-        console.error(`Child process stderr: ${data}`);
+        winston.info(`Child process stderr: ${data}`);
       });
 
       childProcess.on('exit', (code) => {
-        console.log(`Child process exited with code ${code}`);
+        winston.info(`Child process exited with code ${code}`);
       });
     } catch (e) {
-      console.error("ERROR:", e);
+      winston.info("ERROR:", e);
     }
   }
 
@@ -122,8 +173,12 @@ function loadRequirementsPage() {
     height: 1024,
     autoHideMenuBar: true,
   });
-
-  mainWindow.loadFile(path.join(__dirname, 'requirements', 'requirements.html'));
+  if (isDev) { 
+    mainWindow.loadFile(path.join(__dirname, 'requirements', 'requirements.html'));
+  } else {
+    const filePath = path.join(__dirname, '..', 'requirements', 'requirements.html');
+    mainWindow.loadFile(filePath);
+  }
 
   // Handle the link click event
   mainWindow.webContents.on('will-navigate', (event, url) => {
@@ -145,8 +200,9 @@ app.on('ready', async () => {
       if (dotnetInstalled) {
         dotnetPath = "/usr/local/share/dotnet/dotnet";
         loadMainProgram();
+        winston.info('dotnet installed');
       } else {
-        console.log('.NET is not installed.');
+        winston.info('dotnet NOT INSTALLED');
         loadRequirementsPage();
       }
     });

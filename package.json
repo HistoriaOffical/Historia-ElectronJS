@@ -1,5 +1,5 @@
 {
-  "name": "Historia-Local-Web-App",
+  "name": "historia-local-web-app",
   "version": "1.0.0",
   "description": "Historia Local Web App",
   "main": "main.js",
@@ -34,6 +34,13 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "./requirements/",
+        "to": "requirements",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "files": [
@@ -45,5 +52,8 @@
   "devDependencies": {
     "electron": "^26.2.2",
     "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "winston": "^3.11.0"
   }
 }
