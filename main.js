@@ -164,7 +164,7 @@ function loadMainProgram() {
     mainWindow.on('closed', () => {
       mainWindow = null;
     });
-  }, 2000);
+  }, 4000);
 }
 
 function loadRequirementsPage() {
