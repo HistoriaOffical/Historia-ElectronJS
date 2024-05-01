@@ -67,9 +67,9 @@ function loadMainProgram() {
       const os = detectOperatingSystem();
 
       if (os === 'Windows') {
-        configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb.exe');
-        console.log("WINDOWS");
-        childProcess = spawn(configPath);
+        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
+        const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
+        childProcess = spawn(configPath, {cwd: resourcesPath });
       } else if (os === "Linux") {
         configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb');
         const args = [configPath];
@@ -112,7 +112,8 @@ function loadMainProgram() {
       if (os === 'Windows') {
         winston.info("WINDOWS");
         configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
-        childProcess = spawn(configPath);
+        const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
+        childProcess = spawn(configPath, {cwd: resourcesPath });
 
       } else if (os === "Linux") {
         winston.info("Linux");
