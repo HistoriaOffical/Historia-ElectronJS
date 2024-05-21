@@ -1,7 +1,9 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const os = require('os');
+const ps = require('ps-node');
+
 const winston = require('winston');
 const { exec } = require('child_process');
 
@@ -56,123 +58,151 @@ function loadMainProgram() {
     width: 1280,
     height: 1024,
     autoHideMenuBar: true,
+    webPreferences: {
+        nodeIntegration: true,
+		preload: path.join(__dirname, 'preload.js')
+    }
   });
 
-  if (isDev) {
-    console.log("DEV");
-    try {
-      mainWindow.webContents.openDevTools();
-      let configPath;
-      let dotnetPath = "/usr/local/share/dotnet/dotnet";
-      const os = detectOperatingSystem();
 
-      if (os === 'Windows') {
-        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
-        const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
-        childProcess = spawn(configPath, {cwd: resourcesPath });
-      } else if (os === "Linux") {
-        configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb');
-        const args = [configPath];
-        console.log("Linux");
-        childProcess = spawn(configPath, { 
-          cwd: path.join(__dirname, 'assets', 'HistoriaLocal')
-        });
-      } else {
-        configPath = path.join(__dirname, 'assets', 'HistoriaLocal', 'HistWeb.dll');
-        const args = [configPath];
-        console.log("OSX");
-        childProcess = spawn(dotnetPath, args);  
-      }
+  winston.info('PROD');
+  try {
+    //mainWindow.webContents.openDevTools();
+    let configPath;
+    const os = detectOperatingSystem();
+    let dotnetPath = "/usr/local/share/dotnet/dotnet";
+    if (os === 'Windows') {
+      winston.info("WINDOWS");
+      configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
+      const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
+      childProcess = spawn(configPath, {cwd: resourcesPath });
 
-
-
-      //childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(__dirname, 'assets', 'HistoriaLocal') : undefined });
-
-      childProcess.stdout.on('data', (data) => {
-        console.log(`Child process stdout: ${data}`);
+    } else if (os === "Linux") {
+      winston.info("Linux");
+      configPath = path.join(path.dirname(__dirname), 'HistoriaLocal','HistWeb');
+      const args = [configPath];
+      console.log("Linux");
+      childProcess = spawn(configPath, {
+            cwd: path.join(process.resourcesPath, 'HistoriaLocal')
       });
 
-      childProcess.stderr.on('data', (data) => {
-        console.error(`Child process stderr: ${data}`);
-      });
-
-      childProcess.on('exit', (code) => {
-        console.log(`Child process exited with code ${code}`);
-      });
-    } catch (e) {
-      console.error("ERROR:", e);
+    } else {
+      winston.info('OSX');
+      configPath = path.join(path.dirname(__dirname), 'HistoriaLocal','HistWeb.dll');
+      const args = [configPath];
+      const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
+      childProcess = spawn(dotnetPath, args, { cwd: resourcesPath });  
     }
-  } else {
-    winston.info('PROD');
-    try {
-
-      let configPath;
-      const os = detectOperatingSystem();
-      let dotnetPath = "/usr/local/share/dotnet/dotnet";
-      if (os === 'Windows') {
-        winston.info("WINDOWS");
-        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
-        const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
-        childProcess = spawn(configPath, {cwd: resourcesPath });
-
-      } else if (os === "Linux") {
-        winston.info("Linux");
-        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal','HistWeb');
-        const args = [configPath];
-        console.log("Linux");
-        childProcess = spawn(configPath, {
-              cwd: path.join(process.resourcesPath, 'HistoriaLocal')
-        });
-
-      } else {
-        winston.info('OSX');
-        configPath = path.join(path.dirname(__dirname), 'HistoriaLocal','HistWeb.dll');
-        const args = [configPath];
-        const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
-        childProcess = spawn(dotnetPath, args, { cwd: resourcesPath });  
-      }
 
 
-      
-      //childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(process.resourcesPath, 'HistoriaLocal') : undefined });
+    
+    //childProcess = spawn(configPath, { cwd: os === 'Linux' ? path.join(process.resourcesPath, 'HistoriaLocal') : undefined });
 
-      childProcess.stdout.on('data', (data) => {
-        winston.info(`Child process stdout: ${data}`);
-      });
+    childProcess.stdout.on('data', (data) => {
+      winston.info(`Child process stdout: ${data}`);
+    });
 
-      childProcess.stderr.on('data', (data) => {
-        winston.info(`Child process stderr: ${data}`);
-      });
+    childProcess.stderr.on('data', (data) => {
+      winston.info(`Child process stderr: ${data}`);
+    });
 
-      childProcess.on('exit', (code) => {
-        winston.info(`Child process exited with code ${code}`);
-      });
-    } catch (e) {
-      winston.info("ERROR:", e);
-    }
+    childProcess.on('exit', (code) => {
+      winston.info(`Child process exited with code ${code}`);
+    });
+  } catch (e) {
+    winston.info("ERROR:", e);
   }
 
-  app.on('before-quit', () => {
-    if (childProcess) {
-      console.log('Terminating C# process...');
-      childProcess.kill();
-    }
+
+	app.on('before-quit', async () => {
+
+		if (childProcess) {
+			console.log('Terminating C# process...');
+			childProcess.kill();
+		}
+
+		// After all cleanup, you can then quit the application
+		app.quit();
+	});
+
+	function loadMainProgram() {
+		mainWindow = new BrowserWindow({
+			width: 1280,
+			height: 1024,
+			autoHideMenuBar: true,
+			webPreferences: {
+				nodeIntegration: true,
+				preload: path.join(__dirname, 'preload.js')
+			}
+		});
+
+		mainWindow.webContents.on('did-finish-load', () => {
+			console.log("Page loaded successfully");
+		});
+
+
+  const loadingFilePath = path.join(__dirname, 'loading.html');
+  console.log(`Loading file: ${loadingFilePath}`);
+  mainWindow.loadFile(loadingFilePath).then(() => {
+    console.log("Loading screen displayed");
+    // Wait for 5 seconds before starting to load the main content
+    setTimeout(() => {
+      loadWithRetry('http://localhost:5000/', 10);
+    }, 5000);
+  }).catch(err => {
+    console.error("Failed to load loading screen: ", err);
   });
 
-  // Wait for a moment to ensure the C# server has started
-  setTimeout(() => {
-    mainWindow.loadURL('http://localhost:5000/');
+
+		mainWindow.on('closed', () => {
+			mainWindow = null;
+		});
+	}
+
+
+
+  const loadingFilePath = path.join(__dirname, 'loading.html');
+  console.log(`Loading file: ${loadingFilePath}`);
+  mainWindow.loadFile(loadingFilePath).then(() => {
+    console.log("Loading screen displayed");
+    // Wait for 5 seconds before starting to load the main content
+    setTimeout(() => {
+      loadWithRetry('http://localhost:5000/', 10);
+    }, 5000);
+  }).catch(err => {
+    console.error("Failed to load loading screen: ", err);
+  });
+
+
     mainWindow.on('closed', () => {
-      mainWindow = null;
+        mainWindow = null;
     });
-  }, 4000);
 }
+
+function loadWithRetry(url, retries, delay = 5000) {
+    console.log(`Attempting to load: ${url}, retries left: ${retries}`);
+    mainWindow.loadURL(url).catch(err => {
+        console.error("Load failed: ", err);
+        if (retries > 0) {
+            setTimeout(() => {
+                loadWithRetry(url, retries - 1, delay);
+            }, delay);
+        } else {
+            console.error("All retries failed.");
+        }
+    });
+}
+
 
 function loadRequirementsPage() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 1024,
     autoHideMenuBar: true,
+	webPreferences: {
+		nodeIntegration: true,
+		preload: path.join(__dirname, 'preload.js')
+    }
   });
   if (isDev) { 
     mainWindow.loadFile(path.join(__dirname, 'requirements', 'requirements.html'));
@@ -210,6 +240,12 @@ app.on('ready', async () => {
   } catch (err) {
     console.error('Error checking dotnet installation:', err);
   }
+});
+
+ipcMain.on('shutdown', (event, arg) => {
+    console.log('Shutdown command received');
+    mainWindow.close(); // Closes the window
+    app.quit(); // Quit the entire app
 });
 
 app.on('window-all-closed', () => {
