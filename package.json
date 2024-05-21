@@ -1,6 +1,6 @@
 {
   "name": "historia-local-web-app",
-  "version": "1.0.0",
+  "version": "1.7.0",
   "description": "Historia Local Web App",
   "main": "main.js",
   "scripts": {
@@ -11,9 +11,9 @@
   "license": "ISC",
   "build": {
     "appId": "com.historia.hlwa",
-    "productName": "Historia Local Web App",
+    "productName": "hlwa",
     "directories": {
-      "output": "dist"
+      "output": "dist3"
     },
     "win": {
       "target": "nsis",
@@ -46,7 +46,11 @@
     "files": [
       "main.js",
       "index.html",
-      "node_modules/"
+      "node_modules/",
+	  "preload.js",
+	  "renderer.js",
+	  "css/",
+	  "**/*"
     ]
   },
   "devDependencies": {
@@ -54,6 +58,9 @@
     "electron-builder": "^24.6.4"
   },
   "dependencies": {
-    "winston": "^3.11.0"
+    "ipc": "^0.0.1",
+    "ps-node": "^0.1.6",
+    "winston": "^3.11.0",
+    "ws": "^8.17.0"
   }
 }
