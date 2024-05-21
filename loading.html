@@ -15,6 +15,17 @@
             font-family: Arial, sans-serif;
             background-color: #f3f3f3;
         }
+        .logo {
+            width: 500px;
+            height: auto;
+            opacity: 0;
+            animation: fadeIn 7s forwards;
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
         .spinner {
             width: 40px;
             height: 40px;
@@ -22,6 +33,7 @@
             border-left-color: #000;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin-top: 20px;
         }
         @keyframes spin {
             to {
@@ -36,6 +48,7 @@
     </style>
 </head>
 <body>
+    <img src="logoblue.svg" alt="Logo" class="logo">
     <div class="spinner"></div>
     <div class="loading-message">Loading Historia Local Web (HLWA), please wait...</div>
 </body>
