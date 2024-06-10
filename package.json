@@ -12,12 +12,12 @@
   "build": {
     "appId": "com.historia.localwebapplication",
     "publish": [
-    {
+      {
         "provider": "github",
         "owner": "HistoriaOffical",  
         "repo": "Historia-Local-Web-Application"  
       }
-    ]
+    ],
     "productName": "hlwa",
     "directories": {
       "output": "dist3"
@@ -54,10 +54,10 @@
       "main.js",
       "index.html",
       "node_modules/",
-	  "preload.js",
-	  "renderer.js",
-	  "css/",
-	  "**/*"
+      "preload.js",
+      "renderer.js",
+      "css/",
+      "**/*"
     ]
   },
   "devDependencies": {
@@ -71,3 +71,4 @@
     "ws": "^8.17.0"
   }
 }
+
