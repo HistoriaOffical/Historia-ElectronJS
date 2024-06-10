@@ -10,7 +10,14 @@
   "author": "Historia.Network",
   "license": "ISC",
   "build": {
-    "appId": "com.historia.hlwa",
+    "appId": "com.historia.localwebapplication",
+    "publish": [
+    {
+        "provider": "github",
+        "owner": "HistoriaOffical",  
+        "repo": "Historia-Local-Web-Application"  
+      }
+    ]
     "productName": "hlwa",
     "directories": {
       "output": "dist3"
