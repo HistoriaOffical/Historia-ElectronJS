@@ -14,8 +14,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "HistoriaOffical",  
-        "repo": "Historia-Local-Web-Application"  
+        "owner": "HistoriaOffical",
+        "repo": "Historia-Local-Web-Application"
       }
     ],
     "productName": "hlwa",
@@ -65,10 +65,11 @@
     "electron-builder": "^24.6.4"
   },
   "dependencies": {
+    "electron-log": "^5.1.5",
+    "electron-updater": "^6.2.1",
     "ipc": "^0.0.1",
     "ps-node": "^0.1.6",
     "winston": "^3.11.0",
     "ws": "^8.17.0"
   }
 }
-
