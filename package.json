@@ -11,6 +11,38 @@
   "license": "ISC",
   "build": {
     "appId": "com.historia.localwebapplication",
+    "productName": "hlwa",
+    "directories": {
+      "output": "dist3"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Historia-Local-Web-App-OSX-x86_x64-v${version}.zip",
+      "icon": "resources/icon.icns"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Historia-Local-Web-App-Windows-x86_x64-v${version}.zip",
+      "icon": "resources/icon.ico"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "resources/icon.png"
+    },
     "publish": [
       {
         "provider": "github",
@@ -18,22 +50,6 @@
         "repo": "Historia-Local-Web-Application"
       }
     ],
-    "productName": "hlwa",
-    "directories": {
-      "output": "dist3"
-    },
-    "win": {
-      "target": "nsis",
-      "icon": "resources/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "resources/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "resources/icon.png"
-    },
     "extraResources": [
       {
         "from": "./assets/HistoriaLocal/",
