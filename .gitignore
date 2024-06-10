@@ -1,0 +1,6 @@
+assets/HistoriaLocal/
+.DS_Store
+assets/.DS_Store
+dist3/
+node_modules/
+package-lock.json
