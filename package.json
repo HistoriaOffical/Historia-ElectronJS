@@ -11,7 +11,7 @@
   "license": "ISC",
   "build": {
     "appId": "com.historia.localwebapplication",
-    "productName": "hlwa",
+    "productName": "Historia Local Web",
     "directories": {
       "output": "dist3"
     },
