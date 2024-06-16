@@ -1,5 +1,4 @@
 const { app, BrowserWindow, shell, ipcMain } = require('electron');
-const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const { spawn } = require('child_process');
 const path = require('path');
@@ -18,7 +17,7 @@ const logFileName = path.join(app.getPath('userData'), 'app.log');
 winston.add(new winston.transports.File({ filename: logFileName }));
 
 log.transports.file.level = 'info';
-autoUpdater.logger = log;
+
 log.info('App starting...');
 
 function detectOperatingSystem() {
@@ -34,26 +33,6 @@ function detectOperatingSystem() {
   }
 }
 
-function isDotnetInstalled(callback) {
-  let dotnetPath = '';
-  if (os.platform() === 'win32') {
-    dotnetPath = 'dotnet';
-  } else if (os.platform() === 'darwin' || os.platform() === 'linux') {
-    dotnetPath = '/usr/local/share/dotnet/dotnet';
-  }
-
-  const command = `${dotnetPath} --version`;
-
-  exec(command, (error, stdout, stderr) => {
-    if (error || stderr) {
-      winston.info('dotnet error: ' + error + " " + stderr);
-      callback(false);
-    } else {
-      winston.info('dotnet installed');
-      callback(true);
-    }
-  });
-}
 
 function loadMainProgram() {
   mainWindow = new BrowserWindow({
@@ -61,8 +40,8 @@ function loadMainProgram() {
     height: 1024,
     autoHideMenuBar: true,
     webPreferences: {
-        nodeIntegration: true,
-        preload: path.join(__dirname, 'preload.js')
+      nodeIntegration: true,
+      preload: path.join(__dirname, 'preload.js')
     }
   });
 
@@ -70,7 +49,6 @@ function loadMainProgram() {
   try {
     let configPath;
     const os = detectOperatingSystem();
-    let dotnetPath = "/usr/local/share/dotnet/dotnet";
     if (os === 'Windows') {
       winston.info("WINDOWS");
       configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.exe');
@@ -88,10 +66,14 @@ function loadMainProgram() {
 
     } else {
       winston.info('OSX');
-      configPath = path.join(path.dirname(__dirname), 'HistoriaLocal', 'HistWeb.dll');
-      const args = [configPath];
+
+      const executablePath = path.join(__dirname, 'HistoriaLocal', 'HistWeb');
+      const args = [];
       const resourcesPath = path.join(process.resourcesPath, 'HistoriaLocal');
-      childProcess = spawn(dotnetPath, args, { cwd: resourcesPath });
+      childProcess = spawn('./HistWeb', args, {
+        cwd: resourcesPath,
+        shell: true
+      });
     }
 
     childProcess.stdout.on('data', (data) => {
@@ -178,37 +160,16 @@ function loadRequirementsPage() {
 
 app.on('ready', async () => {
   try {
-    let dotnetPath;
     const os = detectOperatingSystem();
     console.log('OS is:', os);
+    loadMainProgram();
 
-    isDotnetInstalled((dotnetInstalled) => {
-      if (dotnetInstalled) {
-        dotnetPath = "/usr/local/share/dotnet/dotnet";
-        loadMainProgram();
-        winston.info('dotnet installed');
-      } else {
-        winston.info('dotnet NOT INSTALLED');
-        loadRequirementsPage();
-      }
-    });
-
-    autoUpdater.allowPrerelease = true;
-    autoUpdater.checkForUpdatesAndNotify();
 
   } catch (err) {
-    console.error('Error checking dotnet installation:', err);
+    console.error('Error installation:', err);
   }
 });
 
-autoUpdater.on('update-available', () => {
-  log.info('Update available.');
-});
-
-autoUpdater.on('update-downloaded', () => {
-  log.info('Update downloaded; will install now');
-  autoUpdater.quitAndInstall();
-});
 
 ipcMain.on('shutdown', (event, arg) => {
   console.log('Shutdown command received');
