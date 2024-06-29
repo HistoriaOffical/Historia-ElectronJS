@@ -2,7 +2,10 @@ const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const log = require('electron-log');
 const { spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
+const ps = require('ps-node');
 const winston = require('winston');
+const { exec } = require('child_process');
 const { URL } = require('url');
 
 let mainWindow;
