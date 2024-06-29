@@ -6,9 +6,30 @@ const os = require('os');
 const ps = require('ps-node');
 const winston = require('winston');
 const { exec } = require('child_process');
+const url = require('url');
 
 let mainWindow;
 let childProcess;
+
+const externalDomains = [
+    'blockexplorer.historia.network',
+    'openchains.info',
+    'historia.network',
+    'docs.historia.network',
+    'github.com',
+    'blog.historia.network',
+    'x.com',
+    'twitter.com',
+    'facebook.com',
+    'discordapp.com',
+    't.me',
+    'www.reddit.com',
+    'microsoftedge.microsoft.com',
+    'addons.mozilla.org',
+    'chromewebstore.google.com',
+    'youtube.com',
+
+];
 
 app.commandLine.appendSwitch('ignore-certificate-errors');
 const isDev = process.argv.includes('--dev');
@@ -117,6 +138,14 @@ function loadMainProgram() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  // Add event listener for new-window to handle external links
+  mainWindow.webContents.on('new-window', (event, urlStr) => {
+    if (shouldOpenExternally(urlStr)) {
+      event.preventDefault();
+      shell.openExternal(urlStr);
+    }
+  });
 }
 
 function loadWithRetry(url, retries, delay = 5000) {
@@ -180,3 +209,13 @@ ipcMain.on('shutdown', (event, arg) => {
 app.on('window-all-closed', () => {
   app.quit();
 });
+
+
+function shouldOpenExternally(urlStr) {
+  const parsedUrl = new URL(urlStr);
+  const domain = parsedUrl.hostname;
+  if (parsedUrl.protocol === 'mailto:') {
+    return true;
+  }
+  return externalDomains.some(externalDomain => domain.endsWith(externalDomain));
+}
