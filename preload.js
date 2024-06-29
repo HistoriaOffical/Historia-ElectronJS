@@ -1,8 +1,11 @@
+// preload.js
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld(
+contextBridge.exposeInMainWorld('electron', {
+  log: (message) => ipcRenderer.send('log', message)
+});
 
-    'electronAPI', {
-        sendShutdown: () => ipcRenderer.send('shutdown')
-    }
-);
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('Renderer process loaded');
+  ipcRenderer.send('log', 'Renderer process loaded');
+});
