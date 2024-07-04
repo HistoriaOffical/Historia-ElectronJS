@@ -40,9 +40,16 @@
       "icon": "resources/icon.ico"
     },
     "linux": {
-      "target": "AppImage",
+      "target": [
+        {
+          "target": "appImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "hlwa.appImage",
       "icon": "resources/icon.png"
-    },
     "publish": [
       {
         "provider": "github",
